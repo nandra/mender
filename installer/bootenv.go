@@ -15,7 +15,6 @@ package installer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -91,13 +90,25 @@ func (e *UBootEnv) ReadEnv(names ...string) (BootVars, error) {
 	return vars, err
 }
 
+func RunCommand(args ...string) (output []byte, err error) {
+	        // run command as sh -c 'command + args' so we can use |
+	arg := []string{"-c"}
+	arg = append(arg, args...)
+	command := exec.Command("sh", arg...)
+
+	return command.Output()
+}
+
+
 func (e *UBootEnv) WriteEnv(vars BootVars) error {
 	if err := e.checkEnvCanary(); err != nil {
 		return err
 	}
 
+	log.Debug("vars:", vars)
+
 	// Make environment update atomic by using fw_setenv "-s" option.
-	setEnvCmd := e.Command("fw_setenv", "-s", "-")
+/*	setEnvCmd := e.Command("fw_setenv", "-s", "-")
 	pipe, err := setEnvCmd.StdinPipe()
 	if err != nil {
 		log.Errorln("Could not set up pipe to fw_setenv command: ", err)
@@ -129,6 +140,17 @@ func (e *UBootEnv) WriteEnv(vars BootVars) error {
 		log.Errorln("fw_setenv returned failure: ", err)
 		return err
 	}
+	return nil*/
+
+		for k, v := range vars {
+
+			o, err := RunCommand("fw_setenv " + k + " " + v)
+			log.Info("ouptut:", o)
+			if err != nil {
+				return err
+			}
+		}
+
 	return nil
 }
 
